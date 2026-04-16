@@ -1,16 +1,26 @@
 
 # FastAPI Calculator Application
 
-This project includes a calculator API where users can perform operations such as add, subtract, multiply, and divide.
+This project includes a FastAPI calculator where users can perform operations such as add, subtract, multiply, and divide.
 
 ## Key Features
 - Docker containerization
 - PostgreSQL database integration
-- Factory method for creating and instatiating calculcations
+- Factory method for creating and instantiating calculations
+- SQLAlchemy polymorphic models support multiple calculation types in one table
+- BREAD operations for calculations
 - User authentication with JWT
 - Secure user model using SQLAlchemy ORM models and Pydantic schemas
 - CI/CD pipeline with GitHub Actions and Docker Hub
 - Security scanning with Trivy
+
+
+## BREAD Features
+- Browse: Retrieve all calculations for the authenticated user - GET /calculations 
+- Read: Retrieve a single calculation by ID - GET /calculations/{calc_id}
+- Edit: Update inputs and optionally the calculation type - PUT /calculations/{calc_id}
+- Add: Create a new calculation - POST /calculations 
+- Delete: Remove a calculation - DELETE /calculations/{calc_id} 
 
 ---
 
@@ -18,8 +28,7 @@ This project includes a calculator API where users can perform operations such a
 
 Docker Hub Repository
 
-https://hub.docker.com/r/msh0626/601_module11
-https://hub.docker.com/r/msh0626/601_module11/tags
+https://hub.docker.com/r/msh0626/601_module12/tags
 
 ---
 
@@ -27,11 +36,11 @@ https://hub.docker.com/r/msh0626/601_module11/tags
 
 Clone the repository
 ```
-git clone git@github.com:matthowarth26/is601_assignment11.git
-cd is601_assignment10
+git clone git@github.com:matthowarth26/is601_assignment12.git
+cd is601_assignment12
 ```
 
-git@github.com:matthowarth26/is601_assignment11.git
+Initialize virtual environment
 ```
 python3 -m venv venv
 source venv/bin/activate
@@ -43,12 +52,7 @@ pip install -r requirements.txt
 playwright install
 ```
 
-Running the project locally
-```
-python main.py
-```
-
-Run with docker
+Run the project locally with docker
 ```
 docker compose up --build
 ```
@@ -59,12 +63,22 @@ FastAPI:
 http://localhost:8000
 ```
 
+Swagger UI:
+```
+http://localhost:8000/docs
+```
+
 pgAdmin 
 ```
 http://localhost:5050
 ```
 
 ## Running Tests Locally
+Start database container
+```
+docker compose up -d
+```
+
 Run all tests
 ```
 pytest 
@@ -72,14 +86,18 @@ pytest
 
 Run end-to-end tests
 ```
-pytest tests/e2e/test_e2e.py -v
+pytest tests/e2e/test_fastapi_calculator.py -v
 ```
 
 Run integration tests
 ```
 pytest tests/integration/test_calculation_schema.py -v
 pytest tests/integration/test_calculation.py -v
-pytest tests/integration/test_fastapi_calculator.py -v
+pytest tests/integration/test_database.py -v
+pytest tests/integration/test_dependencies.py -v
+pytest tests/integration/test_schema_base.py -v
+pytest tests/integration/test_user.py -v
+pytest tests/integration/test_user_auth.py -v
 ```
 
 Run unit tests
@@ -93,6 +111,27 @@ pytest --cov=app
 ```
 
 ---
+
+## Manual API Testing
+Start database container
+```
+docker compose up -d --build
+```
+
+Open Swagger UI (http://localhost:8000/docs)
+
+1. Read API health using GET /health 
+2. Register a user using POST /auth/register
+3. Generate a token using POST /auth/token
+4. Click Authorize and add username and password 
+5. Test calculation endpoints: 
+    - POST /calculations
+    - GET /calculations
+    - PUT /calculations/{calc_id}
+    - DELETE /calculations/{calc_id}
+
+---
+
 
 ## CI/CD Information
 
