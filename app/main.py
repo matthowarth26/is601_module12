@@ -187,27 +187,50 @@ def get_calculation(
 def update_calculation(
     calc_id: str,
     calculation_update: CalculationUpdate,
-    current_user = Depends(get_current_active_user),
+    current_user=Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     try:
         calc_uuid = UUID(calc_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid calculation id format.")
+
     calculation = db.query(Calculation).filter(
         Calculation.id == calc_uuid,
         Calculation.user_id == current_user.id
     ).first()
+
     if not calculation:
         raise HTTPException(status_code=404, detail="Calculation not found.")
 
-    if calculation_update.inputs is not None:
-        calculation.inputs = calculation_update.inputs
-        calculation.result = calculation.get_result()
-    calculation.updated_at = datetime.utcnow()
-    db.commit()
-    db.refresh(calculation)
-    return calculation
+    new_type = calculation_update.type if calculation_update.type is not None else calculation.type
+    new_inputs = calculation_update.inputs if calculation_update.inputs is not None else calculation.inputs
+
+    try:
+        updated_calculation = Calculation.create(
+            calculation_type=new_type,
+            user_id=current_user.id,
+            inputs=new_inputs,
+        )
+
+        # Preserve original row identity/timestamps you want to keep
+        updated_calculation.id = calculation.id
+        updated_calculation.created_at = calculation.created_at
+        updated_calculation.updated_at = datetime.utcnow()
+        updated_calculation.result = updated_calculation.get_result()
+
+        db.delete(calculation)
+        db.flush()
+
+        db.add(updated_calculation)
+        db.commit()
+        db.refresh(updated_calculation)
+
+        return updated_calculation
+
+    except ValueError as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
 
 # Delete a Calculation
 @app.delete("/calculations/{calc_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["calculations"])
